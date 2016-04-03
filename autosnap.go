@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"config"
+	"snapman"
 )
 
 const Config = "/opt/autosnap/conf/autosnap.conf"
@@ -23,6 +24,5 @@ func main() {
 		fmt.Fprintf(os.Stderr, "unknown command '%s', interval not defined\n", command)
 		os.Exit(2)
 	}
-
-	fmt.Fprintf(os.Stderr, "conf: %v command: %s\n", conf, command)
+	snapman.Execute(conf, command)
 }
