@@ -48,7 +48,7 @@ func New(config string) (*Config, error) {
 			countStr = strings.TrimSpace(countStr)
 			count, err := strconv.Atoi(countStr)
 			if err != nil {
-				return nil, fmt.Errorf("bad 'count' value '%s' : %s", countStr, err)
+				return nil, fmt.Errorf("bad %s count value '%s' : %s", interval, countStr, err)
 			}
 			if count <= 0 {
 				return nil, fmt.Errorf("bad %s count value '%s' : must be positive integer", interval, countStr)
