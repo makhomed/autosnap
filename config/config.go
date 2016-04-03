@@ -56,6 +56,9 @@ func New(config string) (*Config, error) {
 			if _, ok := conf.Interval[interval]; ok {
 				return nil, fmt.Errorf("duplicate interval '%s'", interval)
 			}
+			if interval=="clean" {
+				return nil, fmt.Errorf("interval name '%s' not allowed", interval)
+			}
 			conf.Interval[interval] = count
 		case "exclude":
 			if spacePosition := strings.Index(value, " "); spacePosition >= 0 {
