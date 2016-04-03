@@ -54,7 +54,7 @@ func New(config string) (*Config, error) {
 				return nil, fmt.Errorf("bad %s count value '%s' : must be positive integer", interval, countStr)
 			}
 			if _, ok := conf.Interval[interval]; ok {
-				return nil, fmt.Errorf("duplicate interval '%s'", value)
+				return nil, fmt.Errorf("duplicate interval '%s'", interval)
 			}
 			conf.Interval[interval] = count
 		case "exclude":
