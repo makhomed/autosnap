@@ -22,4 +22,4 @@ ZFS snapshots automation tool
   - ```cp /opt/autosnap/src/example/autosnap.cron /etc/cron.d/autosnap```
   - ```vim /etc/cron.d/autosnap```
 * Advanced usage
-  - ```/opt/autosnap/bin/autosnap clean``` will only delete old snapshots. Useful for usage on backup node for snapshots received via ```zfs send```
+  - ```/opt/autosnap/bin/autosnap clean``` will only delete old ```autosnap``` snapshots.
