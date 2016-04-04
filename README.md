@@ -1,5 +1,5 @@
 # autosnap
-ZFS snapshots automation tool
+ZFS snapshot automation tool
 ## Usage
 * [install Go](https://golang.org/doc/install)
   - [Download Go](https://golang.org/dl/)
