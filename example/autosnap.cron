@@ -1,4 +1,6 @@
 
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
 0 * * * * root /opt/autosnap/bin/autosnap hourly
 0 0 * * * root /opt/autosnap/bin/autosnap daily
 
