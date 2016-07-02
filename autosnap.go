@@ -8,8 +8,6 @@ import (
 	"flag"
 )
 
-//const Config = "/opt/autosnap/conf/autosnap.conf"
-
 var configName = flag.String("c", "/opt/autosnap/conf/autosnap.conf", "config")
 
 func main() {
