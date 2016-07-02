@@ -79,9 +79,16 @@ type Snapshot struct {
 }
 
 type ByCreationDate []Snapshot
-func (a ByCreationDate) Len() int           { return len(a) }
-func (a ByCreationDate) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByCreationDate) Less(i, j int) bool { return a[i].CreationDate > a[j].CreationDate }
+
+func (a ByCreationDate) Len() int {
+	return len(a)
+}
+func (a ByCreationDate) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+func (a ByCreationDate) Less(i, j int) bool {
+	return a[i].CreationDate > a[j].CreationDate
+}
 
 type Snapshots map[string]map[string][]Snapshot
 //   map[command] -> map[dataset] -> []Snapshot
@@ -125,8 +132,8 @@ func (snapshots *Snapshots) DeleteExpiredSnapshots(conf *config.Config) {
 				slice := (*snapshots)[command][dataset]
 				sort.Sort(ByCreationDate(slice))
 				leave := conf.Interval[command]
-				if len(slice)>leave {
-					slice=slice[leave:]
+				if len(slice) > leave {
+					slice = slice[leave:]
 					for _, snapshot := range slice {
 						DeleteSnapshot(snapshot.SnapshotName)
 					}
@@ -191,7 +198,7 @@ func Execute(conf *config.Config, command string) {
 	}
 	if _, ok := conf.Interval[command]; ok {
 		for dataset := range datasets {
-			if _, ok := conf.Exclude[dataset]; !ok {
+			if conf.Included(dataset) {
 				CreateSnapshot(dataset, command)
 			}
 		}

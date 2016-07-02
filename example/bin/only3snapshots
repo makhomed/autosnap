@@ -1,0 +1,3 @@
+
+./autosnap -c /opt/autosnap/conf/only3snapshots.conf clean
+

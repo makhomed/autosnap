@@ -6,17 +6,39 @@ import (
 	"strings"
 	"strconv"
 	"fmt"
+	"path/filepath"
 )
+
+type filterLine struct {
+	included bool   // true == include, false == exclude
+	pattern  string // rules: https://golang.org/pkg/path/filepath/#Match
+}
 
 type Config struct {
 	Interval map[string]int
-	Exclude  map[string]bool
+	filter   []filterLine
+}
+
+func (config *Config) Included(dataset string) bool {
+	for _, line := range config.filter {
+		if line.pattern == "*" {
+			return line.included
+		}
+		matched, err := filepath.Match(line.pattern, dataset);
+		if err != nil {
+			panic(fmt.Sprintf("pattern is malformed: '%s'", line.pattern))
+		}
+		if matched {
+			return line.included
+		}
+	}
+	panic(fmt.Sprintf("unexpected end of func config.Included for dataset '%s'", dataset))
 }
 
 func New(config string) (*Config, error) {
 	conf := &Config{
 		Interval: make(map[string]int),
-		Exclude:make(map[string]bool),
+		filter: make([]filterLine, 0),
 	}
 	configFile, err := os.Open(config)
 	if err != nil {
@@ -56,18 +78,26 @@ func New(config string) (*Config, error) {
 			if _, ok := conf.Interval[interval]; ok {
 				return nil, fmt.Errorf("duplicate interval '%s'", interval)
 			}
-			if interval=="clean" {
+			if interval == "clean" {
 				return nil, fmt.Errorf("interval name '%s' not allowed", interval)
 			}
 			conf.Interval[interval] = count
+		case "include":
+			if spacePosition := strings.Index(value, " "); spacePosition >= 0 {
+				return nil, fmt.Errorf("spaces not allowed: '%s'", value)
+			}
+			if _, err := filepath.Match(value, ""); err != nil {
+				return nil, fmt.Errorf("pattern is malformed: '%s'", value)
+			}
+			conf.filter = append(conf.filter, filterLine{true, value})
 		case "exclude":
 			if spacePosition := strings.Index(value, " "); spacePosition >= 0 {
 				return nil, fmt.Errorf("spaces not allowed: '%s'", value)
 			}
-			if _, ok := conf.Exclude[value]; ok {
-				return nil, fmt.Errorf("duplicate exclude '%s'", value)
+			if _, err := filepath.Match(value, ""); err != nil {
+				return nil, fmt.Errorf("pattern is malformed: '%s'", value)
 			}
-			conf.Exclude[value] = true
+			conf.filter = append(conf.filter, filterLine{false, value})
 		default:
 			return nil, fmt.Errorf("unknown directive '%s'", name)
 		}
@@ -75,5 +105,6 @@ func New(config string) (*Config, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
+	conf.filter = append(conf.filter, filterLine{true, "*"}) // include all by default
 	return conf, nil
 }

@@ -1,0 +1,4 @@
+
+./autosnap -c /opt/autosnap/conf/deleteAllSnapshots.conf clean
+
+
