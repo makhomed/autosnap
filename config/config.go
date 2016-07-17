@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"fmt"
 	"path/filepath"
+	"regexp"
 )
 
 type filterLine struct {
@@ -23,6 +24,14 @@ func (config *Config) Included(dataset string) bool {
 	for _, line := range config.filter {
 		if line.pattern == "*" {
 			return line.included
+		}
+		if strings.Contains(line.pattern, "**") {
+			pattern := strings.Replace(line.pattern, "**", ".*", -1)
+			re := regexp.MustCompile(pattern)
+			matched := re.MatchString(dataset)
+			if matched {
+				return line.included
+			}
 		}
 		matched, err := filepath.Match(line.pattern, dataset);
 		if err != nil {
@@ -106,5 +115,17 @@ func New(config string) (*Config, error) {
 		return nil, err
 	}
 	conf.filter = append(conf.filter, filterLine{true, "*"}) // include all by default
+
+	for _, line := range conf.filter {
+		if strings.Contains(line.pattern, "**") {
+			pattern := strings.Replace(line.pattern, "**", ".*", -1)
+			_, err := regexp.Compile(pattern)
+			if err != nil {
+				return nil, err
+			}
+
+		}
+	}
+
 	return conf, nil
 }
