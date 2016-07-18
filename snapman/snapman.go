@@ -121,19 +121,35 @@ func (snapshots *Snapshots) AddSnapshot(conf *config.Config, snapshot Snapshot) 
 }
 
 func (snapshots *Snapshots) DeleteExpiredSnapshots(conf *config.Config, command string) {
-
-	for dataset := range (*snapshots)[command] {
-		slice := (*snapshots)[command][dataset]
-		sort.Sort(ByCreationDate(slice))
-		leave := conf.Interval[command]
-		if len(slice) > leave {
-			slice = slice[leave:]
-			for _, snapshot := range slice {
-				DeleteSnapshot(snapshot.SnapshotName)
+	switch command {
+	default:
+		for dataset := range (*snapshots)[command] {
+			slice := (*snapshots)[command][dataset]
+			sort.Sort(ByCreationDate(slice))
+			leave := conf.Interval[command]
+			if len(slice) > leave {
+				slice = slice[leave:]
+				for _, snapshot := range slice {
+					DeleteSnapshot(snapshot.SnapshotName)
+				}
 			}
 		}
-	}
+	case "clean":
+		for command := range *snapshots {
+			for dataset := range (*snapshots)[command] {
+				slice := (*snapshots)[command][dataset]
+				sort.Sort(ByCreationDate(slice))
+				leave := conf.Interval[command]
+				if len(slice) > leave {
+					slice = slice[leave:]
+					for _, snapshot := range slice {
+						DeleteSnapshot(snapshot.SnapshotName)
+					}
+				}
+			}
 
+		}
+	}
 	for dataset := range (*snapshots)["clean"] {
 		for _, snapshot := range (*snapshots)[command][dataset] {
 			DeleteSnapshot(snapshot.SnapshotName)
