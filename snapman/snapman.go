@@ -41,6 +41,7 @@ func CreateSnapshot(dataset string, command string) {
 	cmd := exec.Command("zfs", "snapshot", name)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "create shapshot: zfs snapshot %s\n", name)
 		fmt.Fprintf(os.Stderr, "create shapshot: %v\n", err)
 	}
 	buffer := bytes.NewBuffer(output)
@@ -58,6 +59,7 @@ func DeleteSnapshot(snapshotName string) {
 	cmd := exec.Command("zfs", "destroy", snapshotName)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "delete shapshot: zfs destroy %s\n", snapshotName)
 		fmt.Fprintf(os.Stderr, "delete shapshot: %v\n", err)
 	}
 	buffer := bytes.NewBuffer(output)
@@ -118,29 +120,26 @@ func (snapshots *Snapshots) AddSnapshot(conf *config.Config, snapshot Snapshot) 
 	data[snapshot.DatasetName] = append(data[snapshot.DatasetName], snapshot)
 }
 
-func (snapshots *Snapshots) DeleteExpiredSnapshots(conf *config.Config) {
-	for command := range *snapshots {
-		switch command {
-		case "clean":
-			for dataset := range (*snapshots)[command] {
-				for _, snapshot := range (*snapshots)[command][dataset] {
-					DeleteSnapshot(snapshot.SnapshotName)
-				}
-			}
-		default:
-			for dataset := range (*snapshots)[command] {
-				slice := (*snapshots)[command][dataset]
-				sort.Sort(ByCreationDate(slice))
-				leave := conf.Interval[command]
-				if len(slice) > leave {
-					slice = slice[leave:]
-					for _, snapshot := range slice {
-						DeleteSnapshot(snapshot.SnapshotName)
-					}
-				}
+func (snapshots *Snapshots) DeleteExpiredSnapshots(conf *config.Config, command string) {
+
+	for dataset := range (*snapshots)[command] {
+		slice := (*snapshots)[command][dataset]
+		sort.Sort(ByCreationDate(slice))
+		leave := conf.Interval[command]
+		if len(slice) > leave {
+			slice = slice[leave:]
+			for _, snapshot := range slice {
+				DeleteSnapshot(snapshot.SnapshotName)
 			}
 		}
 	}
+
+	for dataset := range (*snapshots)["clean"] {
+		for _, snapshot := range (*snapshots)[command][dataset] {
+			DeleteSnapshot(snapshot.SnapshotName)
+		}
+	}
+
 }
 
 func GetSnapshots(conf *config.Config) (*Snapshots, error) {
@@ -208,5 +207,5 @@ func Execute(conf *config.Config, command string) {
 		fmt.Fprintf(os.Stderr, "fatal error: can't read snapshots: %v\n", err)
 		os.Exit(1)
 	}
-	snapshots.DeleteExpiredSnapshots(conf)
+	snapshots.DeleteExpiredSnapshots(conf, command)
 }
