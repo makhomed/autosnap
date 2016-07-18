@@ -155,7 +155,6 @@ func (snapshots *Snapshots) DeleteExpiredSnapshots(conf *config.Config, command 
 			DeleteSnapshot(snapshot.SnapshotName)
 		}
 	}
-
 }
 
 func GetSnapshots(conf *config.Config) (*Snapshots, error) {
