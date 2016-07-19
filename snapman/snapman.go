@@ -124,19 +124,7 @@ func (snapshots *Snapshots) DeleteExpiredSnapshots(conf *config.Config, command 
 	switch command {
 	default:
 		for dataset := range (*snapshots)[command] {
-			slice := (*snapshots)[command][dataset]
-			sort.Sort(ByCreationDate(slice))
-			leave := conf.Interval[command]
-			if len(slice) > leave {
-				slice = slice[leave:]
-				for _, snapshot := range slice {
-					DeleteSnapshot(snapshot.SnapshotName)
-				}
-			}
-		}
-	case "clean":
-		for command := range *snapshots {
-			for dataset := range (*snapshots)[command] {
+			if conf.Included(dataset) {
 				slice := (*snapshots)[command][dataset]
 				sort.Sort(ByCreationDate(slice))
 				leave := conf.Interval[command]
@@ -147,12 +135,30 @@ func (snapshots *Snapshots) DeleteExpiredSnapshots(conf *config.Config, command 
 					}
 				}
 			}
+		}
+	case "clean":
+		for command := range *snapshots {
+			for dataset := range (*snapshots)[command] {
+				if conf.Included(dataset) {
+					slice := (*snapshots)[command][dataset]
+					sort.Sort(ByCreationDate(slice))
+					leave := conf.Interval[command]
+					if len(slice) > leave {
+						slice = slice[leave:]
+						for _, snapshot := range slice {
+							DeleteSnapshot(snapshot.SnapshotName)
+						}
+					}
+				}
+			}
 
 		}
 	}
 	for dataset := range (*snapshots)["clean"] {
-		for _, snapshot := range (*snapshots)[command][dataset] {
-			DeleteSnapshot(snapshot.SnapshotName)
+		if conf.Included(dataset) {
+			for _, snapshot := range (*snapshots)[command][dataset] {
+				DeleteSnapshot(snapshot.SnapshotName)
+			}
 		}
 	}
 }
