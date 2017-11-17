@@ -11,7 +11,7 @@ import sys
 __author__ = "Gena Makhomed"
 __contact__ = "https://github.com/makhomed/autosnap"
 __license__ = "GPLv3"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __date__ = "2017-11-17"
 
 
@@ -111,7 +111,7 @@ class SnapMan(object):
             process.print_info("error")
 
     def delete_snapshot(self, snapshot_name):  # pylint: disable=no-self-use
-        process = Process("zfs", "destroy", snapshot_name)
+        process = Process("/usr/sbin/zfs", "destroy", snapshot_name)
         if process.failed():
             print "can't delete ZFS snapshot '%s'" % snapshot_name
             process.print_info("error")
