@@ -44,7 +44,7 @@ if it was directive ``include`` - dataset will be included.
 Schedule autosnap
 -----------------
   - ``vim /etc/cron.d/autosnap``
-  - write to config something like this:
+  - write to cron file something like this:
 
 .. code-block:: bash
 
@@ -58,5 +58,5 @@ One and only one command must be specified in command line. This command must
 be the name of interval from configuration file.
 
 During execution, autosnap will create one new snapshot for each included dataset
-and will delete all oldest snapshots exceeding the allowed snapshots count for given interval.
+and delete all oldest snapshots exceeding the allowed snapshots count for given interval.
 
