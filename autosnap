@@ -67,7 +67,7 @@ class Config(object):
         for dataset_included, filter_line in self.filters:
             if re.match(filter_line, dataset):
                 return dataset_included
-        sys.exit("config: internal error, dataset '%s' don't match any filter line")
+        sys.exit("internal error: dataset '%s' don't match any filter line")
 
 
 class Process(object):
