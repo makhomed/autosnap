@@ -35,8 +35,8 @@ Syntax of ``include`` and ``exclude`` directives are the same:
 ``exclude <pattern>`` or ``include <pattern>``.
 
 By default all datasets are included. But you can exclude some datasets
-by name or by pattern. Pattern is rsync-like, ``?`` means any symbol,
-``*`` means any symbol except ``/`` symbol, ``**`` means any symbol.
+by name or by pattern. Pattern is rsync-like, ``?`` means any one symbol,
+``*`` means any symbols except ``/`` symbol, ``**`` means any symbols.
 
 First match win, and if it was directive ``exclude`` - dataset will be excluded,
 if it was directive ``include`` - dataset will be included.
@@ -59,4 +59,17 @@ be the name of interval from configuration file.
 
 During execution, autosnap will create one new snapshot for each included dataset
 and delete all oldest snapshots exceeding the allowed snapshots count for given interval.
+
+Also ``autosnap`` supports two specila commands, ``list-unmanaged-snapshots`` and ``list-managed-snapshots``.
+
+Command ``/opt/autosnap/autosnap list-unmanaged-snapshots`` will list all existing snapshots, which are not managed by ``autosnap``.
+
+Command ``/opt/autosnap/autosnap list-managed-snapshots`` will list all existing snapshots, which are managed by ``autosnap``.
+
+If all snapshots are managed by ``autosnap`` it will be useful to schedule in cron command ``/opt/autosnap/autosnap list-unmanaged-snapshots``
+for periodic execution. If abandoned snapshots appears - it will be listed by command ``/opt/autosnap/autosnap list-unmanaged-snapshots``
+and report with such abandoned snapshots will be sent to system administrator mail.
+
+If all snapshots are managed by ``autosnap`` and ``autobackup`` cron command ``/opt/autosnap/autosnap list-unmanaged-snapshots | grep -v "@autobackup"``
+will be useful.
 
