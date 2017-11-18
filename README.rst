@@ -77,6 +77,6 @@ If all snapshots are managed by ``autosnap`` it will be useful to schedule in cr
 for periodic execution. If abandoned snapshots appears - it will be listed by command ``/opt/autosnap/autosnap list-unmanaged-snapshots``
 and report about such abandoned snapshots will be sent to system administrator mail.
 
-If all snapshots are managed by ``autosnap`` and ``autobackup`` cron command ``/opt/autosnap/autosnap list-unmanaged-snapshots | grep -v "@autobackup"``
-will be useful.
+| If all snapshots are managed by ``autosnap`` and ``autobackup``
+| cron command ``/opt/autosnap/autosnap list-unmanaged-snapshots | grep -v "@autobackup"`` will be useful.
 
