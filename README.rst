@@ -1,3 +1,4 @@
+========
 autosnap
 ========
 
@@ -5,11 +6,13 @@ ZFS snapshot automation tool
 
 Installation
 ------------
+
  - ``cd /opt``
  - ``git clone https://github.com/makhomed/autosnap.git autosnap```
 
 Configuration
 -------------
+
   - ``vim /opt/autosnap/autosnap.conf``
   - write to config something like this:
 
@@ -43,6 +46,7 @@ if it was directive ``include`` - dataset will be included.
 
 Schedule autosnap
 -----------------
+
   - ``vim /etc/cron.d/autosnap``
   - write to cron file something like this:
 
@@ -60,7 +64,10 @@ be the name of interval from configuration file.
 During execution, autosnap will create one new snapshot for each included dataset
 and delete all oldest snapshots exceeding the allowed snapshots count for given interval.
 
-Also ``autosnap`` supports two specila commands, ``list-unmanaged-snapshots`` and ``list-managed-snapshots``.
+Additional commands
+-------------------
+
+``autosnap`` supports two special commands, ``list-unmanaged-snapshots`` and ``list-managed-snapshots``.
 
 Command ``/opt/autosnap/autosnap list-unmanaged-snapshots`` will list all existing snapshots, which are not managed by ``autosnap``.
 
@@ -68,7 +75,7 @@ Command ``/opt/autosnap/autosnap list-managed-snapshots`` will list all existing
 
 If all snapshots are managed by ``autosnap`` it will be useful to schedule in cron command ``/opt/autosnap/autosnap list-unmanaged-snapshots``
 for periodic execution. If abandoned snapshots appears - it will be listed by command ``/opt/autosnap/autosnap list-unmanaged-snapshots``
-and report with such abandoned snapshots will be sent to system administrator mail.
+and report about such abandoned snapshots will be sent to system administrator mail.
 
 If all snapshots are managed by ``autosnap`` and ``autobackup`` cron command ``/opt/autosnap/autosnap list-unmanaged-snapshots | grep -v "@autobackup"``
 will be useful.
