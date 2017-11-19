@@ -135,12 +135,15 @@ class SnapMan(object):
             dataset_name, snapshot_info = snapshot_name.split('@')
             if not snapshot_info.startswith("autosnap."):
                 print snapshot_name
+                continue
             last_point_position = snapshot_info.rfind('.')
             snapshot_command = snapshot_info[last_point_position + 1:]
             if snapshot_command not in self.config.intervals:
                 print snapshot_name
+                continue
             if not self.config.included(dataset_name):
                 print snapshot_name
+                continue
 
     def list_managed_snapshots(self):
         process = Process("/usr/sbin/zfs", "list", "-H", "-p", "-o", "name", "-t", "snap")
