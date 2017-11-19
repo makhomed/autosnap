@@ -10,6 +10,12 @@ Installation
  - ``cd /opt``
  - ``git clone https://github.com/makhomed/autosnap.git autosnap``
 
+Upgrade
+-------
+
+ - ``cd /opt/autosnap``
+ - ``git pull``
+
 Configuration
 -------------
 
