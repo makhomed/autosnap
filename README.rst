@@ -8,7 +8,7 @@ Installation
 ------------
 
  - ``cd /opt``
- - ``git clone https://github.com/makhomed/autosnap.git autosnap```
+ - ``git clone https://github.com/makhomed/autosnap.git autosnap``
 
 Configuration
 -------------
