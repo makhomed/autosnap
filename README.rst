@@ -22,7 +22,7 @@ Configuration
   - ``vim /opt/autosnap/autosnap.conf``
   - write to config something like this:
 
-.. code-block:: bash
+.. code-block:: none
 
     interval hourly 24
     interval daily  30
@@ -56,7 +56,7 @@ Schedule autosnap
   - ``vim /etc/cron.d/autosnap``
   - write to cron file something like this:
 
-.. code-block:: bash
+.. code-block:: none
 
     0 0 * * * root /opt/autosnap/autosnap daily
     0 * * * * root /opt/autosnap/autosnap hourly
