@@ -7,20 +7,20 @@ ZFS snapshot automation tool
 Installation
 ------------
 
- - ``cd /opt``
- - ``git clone https://github.com/makhomed/autosnap.git autosnap``
+- ``cd /opt``
+- ``git clone https://github.com/makhomed/autosnap.git autosnap``
 
 Upgrade
 -------
 
- - ``cd /opt/autosnap``
- - ``git pull``
+- ``cd /opt/autosnap``
+- ``git pull``
 
 Configuration
 -------------
 
-  - ``vim /opt/autosnap/autosnap.conf``
-  - write to config something like this:
+- ``vim /opt/autosnap/autosnap.conf``
+- write to config something like this:
 
 .. code-block:: none
 
@@ -53,8 +53,8 @@ if it was directive ``include`` - dataset will be included.
 Schedule autosnap
 -----------------
 
-  - ``vim /etc/cron.d/autosnap``
-  - write to cron file something like this:
+- ``vim /etc/cron.d/autosnap``
+- write to cron file something like this:
 
 .. code-block:: none
 
