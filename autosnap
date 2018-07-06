@@ -10,8 +10,8 @@ import sys
 __author__ = "Gena Makhomed"
 __contact__ = "https://github.com/makhomed/autosnap"
 __license__ = "GPLv3"
-__version__ = "1.0.3"
-__date__ = "2017-11-19"
+__version__ = "1.0.4"
+__date__ = "2018-07-06"
 
 
 class Config(object):
@@ -99,7 +99,7 @@ class SnapMan(object):
         self.config = config
 
     def get_datasets(self):  # pylint: disable=no-self-use
-        process = Process("/usr/sbin/zfs", "list", "-H", "-o", "name")
+        process = Process("/sbin/zfs", "list", "-H", "-o", "name")
         if process.failed():
             print "can't read ZFS datasets"
             process.print_info("fatal error")
@@ -110,19 +110,19 @@ class SnapMan(object):
     def create_snapshot(self, dataset):
         now = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
         snapshot_name = dataset + "@autosnap." + now + "." + self.config.command
-        process = Process("/usr/sbin/zfs", "snapshot", snapshot_name)
+        process = Process("/sbin/zfs", "snapshot", snapshot_name)
         if process.failed():
             print "can't create ZFS snapshot '%s'" % snapshot_name
             process.print_info("error")
 
     def delete_snapshot(self, snapshot_name):  # pylint: disable=no-self-use
-        process = Process("/usr/sbin/zfs", "destroy", snapshot_name)
+        process = Process("/sbin/zfs", "destroy", snapshot_name)
         if process.failed():
             print "can't delete ZFS snapshot '%s'" % snapshot_name
             process.print_info("error")
 
     def list_unmanaged_snapshots(self):
-        process = Process("/usr/sbin/zfs", "list", "-H", "-p", "-o", "name", "-t", "snap")
+        process = Process("/sbin/zfs", "list", "-H", "-p", "-o", "name", "-t", "snap")
         if process.failed():
             print "can't read ZFS snapshots"
             process.print_info("fatal error")
@@ -146,7 +146,7 @@ class SnapMan(object):
                 continue
 
     def list_managed_snapshots(self):
-        process = Process("/usr/sbin/zfs", "list", "-H", "-p", "-o", "name", "-t", "snap")
+        process = Process("/sbin/zfs", "list", "-H", "-p", "-o", "name", "-t", "snap")
         if process.failed():
             print "can't read ZFS snapshots"
             process.print_info("fatal error")
@@ -168,7 +168,7 @@ class SnapMan(object):
             print snapshot_name
 
     def get_snapshots(self):
-        process = Process("/usr/sbin/zfs", "list", "-H", "-p", "-o", "name,creation", "-t", "snap")
+        process = Process("/sbin/zfs", "list", "-H", "-p", "-o", "name,creation", "-t", "snap")
         if process.failed():
             print "can't read ZFS snapshots"
             process.print_info("fatal error")
