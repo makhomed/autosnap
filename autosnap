@@ -1,4 +1,4 @@
-#!/usr/bin/python -u
+#!/usr/bin/python2 -u
 
 import argparse
 import datetime
@@ -10,8 +10,8 @@ import sys
 __author__ = "Gena Makhomed"
 __contact__ = "https://github.com/makhomed/autosnap"
 __license__ = "GPLv3"
-__version__ = "1.0.5"
-__date__ = "2018-07-08"
+__version__ = "1.1.0"
+__date__ = "2020-04-08"
 
 
 class Config(object):
