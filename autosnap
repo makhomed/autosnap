@@ -189,7 +189,7 @@ class SnapMan:
         for dataset_name in snapshots.keys():
             if self.config.included(dataset_name):
                 dataset_snapshots = snapshots[dataset_name]
-                dataset_snapshots.sort(key=lambda x: x['creation_date'])
+                dataset_snapshots.sort(key=lambda x: x['creation_date'], reverse=True)
                 keep_count = self.get_keep_count(dataset_name)
                 if len(dataset_snapshots) > keep_count:
                     delete_queue = dataset_snapshots[keep_count:]
