@@ -1,6 +1,6 @@
-========================
-autosnap (version 1.0.0)
-========================
+======================
+autosnap (version 2.0)
+======================
 
 ZFS snapshot automation tool
 
@@ -9,6 +9,12 @@ Installation
 
 - ``cd /opt``
 - ``git clone https://github.com/makhomed/autosnap.git autosnap``
+
+Also you need to install python3:
+
+.. code-block:: none
+
+    # yum install python3
 
 Upgrade
 -------
@@ -28,8 +34,6 @@ Configuration
     interval daily  30
 
     exclude tank
-    exclude tank/backup**
-    exclude tank/vm
 
 Configuration file allow comments, from symbol ``#`` to end of line.
 
@@ -40,6 +44,9 @@ Syntax of interval directive: ``interval <name> <count>``.
 ``<name>`` is name of interval, must be unique.
 ``<count>`` is count of snapshots to save for interval ``<name>``.
 
+Interval name can be ``frequent``, ``hourly``, ``daily``, ``weekly``, ``monthly``, ``yearly`` or something else.
+Each interval name should be configured via cron for running.
+
 Syntax of ``include`` and ``exclude`` directives are the same:
 ``exclude <pattern>`` or ``include <pattern>``.
 
@@ -49,6 +56,27 @@ by name or by pattern. Pattern is rsync-like, ``?`` means any one symbol,
 
 First match win, and if it was directive ``exclude`` - dataset will be excluded,
 if it was directive ``include`` - dataset will be included.
+
+``exclude`` and ``include`` directives allowed only on global level.
+
+``interval`` directive allowed to be configured for each dataset separately.
+For example:
+
+.. code-block:: none
+
+    interval hourly 24
+    interval daily  30
+
+    exclude tank
+
+    [tank/kvm-stage-elastic]
+
+    interval daily  7
+
+    [tank/kvm-stage-mysqld]
+
+    interval daily  14
+
 
 Schedule autosnap
 -----------------
@@ -61,28 +89,11 @@ Schedule autosnap
     0 0 * * * root /opt/autosnap/autosnap daily
     0 * * * * root /opt/autosnap/autosnap hourly
 
-By default ``autosnap`` will read config from ``/opt/autosnap/autosnap.conf``.
-Command line allow one switch ``-c`` to specify alternate configuration file.
+At start ``autosnap`` will read config from ``/opt/autosnap/autosnap.conf``.
 
 One and only one command must be specified in command line. This command must
 be the name of interval from configuration file.
 
 During execution, autosnap will create one new snapshot for each included dataset
 and delete all oldest snapshots exceeding the allowed snapshots count for given interval.
-
-Additional commands
--------------------
-
-``autosnap`` supports two special commands, ``list-unmanaged-snapshots`` and ``list-managed-snapshots``.
-
-Command ``/opt/autosnap/autosnap list-unmanaged-snapshots`` will list all existing snapshots, which are not managed by ``autosnap``.
-
-Command ``/opt/autosnap/autosnap list-managed-snapshots`` will list all existing snapshots, which are managed by ``autosnap``.
-
-If all snapshots are managed by ``autosnap`` it will be useful to schedule in cron command ``/opt/autosnap/autosnap list-unmanaged-snapshots``
-for periodic execution. If abandoned snapshots appears - it will be listed by command ``/opt/autosnap/autosnap list-unmanaged-snapshots``
-and report about such abandoned snapshots will be sent to system administrator mail.
-
-| If all snapshots are managed by ``autosnap`` and ``autobackup``
-| cron command ``/opt/autosnap/autosnap list-unmanaged-snapshots | grep -v "@autobackup"`` will be useful.
 
