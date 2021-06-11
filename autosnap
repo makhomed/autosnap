@@ -1,4 +1,4 @@
-#!/usr/bin/python2 -u
+#!/usr/bin/python3 -u
 
 import argparse
 import datetime
@@ -9,23 +9,47 @@ import sys
 
 __author__ = "Gena Makhomed"
 __contact__ = "https://github.com/makhomed/autosnap"
-__license__ = "GPLv3"
-__version__ = "1.1.0"
-__date__ = "2020-04-08"
+__license__ = "GNU General Public License version 3"
+__version__ = "2.0.0"
+
+ZFS_BINARY_FILENAME = '/usr/sbin/zfs'
+AUTOSNAP_CONFIG_FILENAME = '/opt/autosnap/autosnap.conf'
 
 
-class Config(object):
+class Process:
+    def __init__(self, *args):
+        self.args = args
+        process = subprocess.Popen(args, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, cwd='/')
+        self.stdout_bytes, self.stderr_bytes = process.communicate()
+        self.stdout = self.stdout_bytes.decode(encoding="utf-8", errors="replace").strip()
+        self.stderr = self.stderr_bytes.decode(encoding="utf-8", errors="replace").strip()
+        self.returncode = process.returncode
 
-    internal_commands = set(["list-unmanaged-snapshots", "list-managed-snapshots"])
+    def failed(self):
+        return self.returncode != 0
 
-    def __init__(self, configuration_file_name, command):
+    def print_info(self, message):
+        print(message + ": Process(", self.args, ") failed")
+        print("returncode:", self.returncode)
+        print("stdout:", self.stdout)
+        print("stderr:", self.stderr)
+
+
+class Config:
+    def __init__(self, command):
         self.intervals = dict()
+        self.intervals['**'] = dict()
         self.filters = list()
         self.command = command
-        if not os.path.isfile(configuration_file_name):
-            sys.exit("configuration file '%s' not found" % configuration_file_name)
-        with open(configuration_file_name) as configuration_file:
+        self.datasets = SnapMan.get_datasets()
+        if not os.path.isfile(ZFS_BINARY_FILENAME):
+            sys.exit(f"zfs binary file {ZFS_BINARY_FILENAME} not found")
+        if not os.path.isfile(AUTOSNAP_CONFIG_FILENAME):
+            sys.exit(f"configuration file '{AUTOSNAP_CONFIG_FILENAME}' not found")
+        with open(AUTOSNAP_CONFIG_FILENAME) as configuration_file:
             lines = configuration_file.read().strip().split('\n')
+        inside_dataset = False
+        dataset = None
         for line in lines:
             comment_start = line.find('#')
             if comment_start > -1:
@@ -34,25 +58,48 @@ class Config(object):
             if not line:
                 continue
             line = line.replace("\t", "\x20")
-            name, value = line.split(None, 1)
+            if line[0] == '[' and line[-1] == ']':
+                inside_dataset = True
+                dataset = line[1:-1].strip()
+                self.intervals[dataset] = dict()
+                if dataset not in self.datasets:
+                    print(f"WARNING!!! dataset '{dataset}' not exists")
+                if '*' in dataset or '?' in dataset or '\t' in dataset or '\x20' in dataset:
+                    sys.exit(f"bad config: bad dataset name '{dataset}'")
+                continue
+            try:
+                name, value = line.split(None, 1)
+            except ValueError:
+                sys.exit(f"bad config: bad line: {line}")
             if name == "interval":
                 interval_name, count_string = value.split(None, 1)
                 if interval_name.find(".") > -1:
-                    sys.exit("bad interval name '%s', symbol '.' not allowed" % interval_name)
-                if interval_name in self.internal_commands:
-                    sys.exit("bad interval name '%s', this name reserved for internal command" % interval_name)
-                if interval_name in self.intervals:
-                    sys.exit("bad config '%s', interval '%s' already defined" % (configuration_file_name, interval_name))
+                    sys.exit("bad config: interval '%s', symbol '.' not allowed" % interval_name)
+                if not inside_dataset:
+                    if interval_name in self.intervals['**']:
+                        sys.exit("bad config: interval '%s' already defined" % interval_name)
+                else:
+                    if interval_name not in self.intervals['**']:
+                        sys.exit("bad config: interval '%s' not defined at global level" % interval_name)
+                    if interval_name in self.intervals[dataset]:
+                        sys.exit("bad config: interval '%s' already defined at dataset level" % interval_name)
                 count = int(count_string)
-                if count < 0:
-                    sys.exit("config interval '%s' count must be positive integer, '%d' given" % (interval_name, count))
-                self.intervals[interval_name] = count
+                if count <= 0:
+                    sys.exit("bad config: interval '%s' count must be positive integer, '%d' given" % (interval_name, count))
+                if not inside_dataset:
+                    self.intervals['**'][interval_name] = count
+                else:
+                    self.intervals[dataset][interval_name] = count
+
             elif name == "include" or name == "exclude":
-                self.filters.append((name == "include", self.transform_filter_line(value)))
+                if not inside_dataset:
+                    self.filters.append((name == "include", self.transform_filter_line(value)))
+                else:
+                    sys.exit(f"bad config: directive '{name}' allowed only on global level")
             else:
-                sys.exit("invalid config directive '%s'" % name)
+                sys.exit("bad config: invalid directive '%s'" % name)
         self.filters.append((True, self.transform_filter_line("**")))
-        if self.command not in self.intervals and self.command not in self.internal_commands:
+        if self.command not in self.intervals['**']:
             sys.exit("bad command '%s', interval '%s' not defined in config" % (self.command, self.command))
 
     def transform_filter_line(self, filter_line):  # pylint: disable=no-self-use
@@ -72,36 +119,18 @@ class Config(object):
         for dataset_included, filter_line in self.filters:
             if re.match(filter_line, dataset):
                 return dataset_included
-        sys.exit("internal error: dataset '%s' don't match any filter line")
+        sys.exit(f"internal error: dataset '{dataset}' don't match any filter line")
 
 
-class Process(object):
-
-    def __init__(self, *args):
-        self.args = args
-        process = subprocess.Popen(args, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, cwd='/')
-        self.stdout, self.stderr = process.communicate()
-        self.returncode = process.returncode
-
-    def failed(self):
-        return self.returncode != 0
-
-    def print_info(self, message):
-        print message + ": Process(", self.args, ") failed"
-        print "returncode:", self.returncode
-        print "stdout:", self.stdout
-        print "stderr:", self.stderr
-
-
-class SnapMan(object):
-
+class SnapMan:
     def __init__(self, config):
         self.config = config
 
-    def get_datasets(self):  # pylint: disable=no-self-use
-        process = Process("/sbin/zfs", "list", "-H", "-o", "name")
+    @staticmethod
+    def get_datasets():
+        process = Process(ZFS_BINARY_FILENAME, "list", "-H", "-o", "name")
         if process.failed():
-            print "can't read ZFS datasets"
+            print("can't read ZFS datasets")
             process.print_info("fatal error")
             sys.exit(1)
         datasets = process.stdout.strip().split('\n')
@@ -110,67 +139,23 @@ class SnapMan(object):
     def create_snapshot(self, dataset):
         now = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
         snapshot_name = dataset + "@autosnap." + now + "." + self.config.command
-        process = Process("/sbin/zfs", "snapshot", snapshot_name)
+        process = Process(ZFS_BINARY_FILENAME, "snapshot", snapshot_name)
         if process.failed():
-            print "can't create ZFS snapshot '%s'" % snapshot_name
+            print("can't create ZFS snapshot '%s'" % snapshot_name)
             process.print_info("error")
 
-    def delete_snapshot(self, snapshot_name):  # pylint: disable=no-self-use
-        process = Process("/sbin/zfs", "destroy", snapshot_name)
+    @staticmethod
+    def delete_snapshot(snapshot_name):
+        assert '@' in snapshot_name
+        process = Process(ZFS_BINARY_FILENAME, "destroy", snapshot_name)
         if process.failed():
-            print "can't delete ZFS snapshot '%s'" % snapshot_name
+            print("can't delete ZFS snapshot '%s'" % snapshot_name)
             process.print_info("error")
-
-    def list_unmanaged_snapshots(self):
-        process = Process("/sbin/zfs", "list", "-H", "-p", "-o", "name", "-t", "snap")
-        if process.failed():
-            print "can't read ZFS snapshots"
-            process.print_info("fatal error")
-            sys.exit(1)
-        lines = process.stdout.strip().split('\n')
-        for snapshot_name in lines:
-            snapshot_name = snapshot_name.strip()
-            if not snapshot_name:
-                continue
-            dataset_name, snapshot_info = snapshot_name.split('@')
-            if not snapshot_info.startswith("autosnap."):
-                print snapshot_name
-                continue
-            last_point_position = snapshot_info.rfind('.')
-            snapshot_command = snapshot_info[last_point_position + 1:]
-            if snapshot_command not in self.config.intervals:
-                print snapshot_name
-                continue
-            if not self.config.included(dataset_name):
-                print snapshot_name
-                continue
-
-    def list_managed_snapshots(self):
-        process = Process("/sbin/zfs", "list", "-H", "-p", "-o", "name", "-t", "snap")
-        if process.failed():
-            print "can't read ZFS snapshots"
-            process.print_info("fatal error")
-            sys.exit(1)
-        lines = process.stdout.strip().split('\n')
-        for snapshot_name in lines:
-            snapshot_name = snapshot_name.strip()
-            if not snapshot_name:
-                continue
-            dataset_name, snapshot_info = snapshot_name.split('@')
-            if not snapshot_info.startswith("autosnap."):
-                continue
-            last_point_position = snapshot_info.rfind('.')
-            snapshot_command = snapshot_info[last_point_position + 1:]
-            if snapshot_command not in self.config.intervals:
-                continue
-            if not self.config.included(dataset_name):
-                continue
-            print snapshot_name
 
     def get_snapshots(self):
-        process = Process("/sbin/zfs", "list", "-H", "-p", "-o", "name,creation", "-t", "snap")
+        process = Process(ZFS_BINARY_FILENAME, "list", "-H", "-p", "-o", "name,creation", "-t", "snap")
         if process.failed():
-            print "can't read ZFS snapshots"
+            print("can't read ZFS snapshots")
             process.print_info("fatal error")
             sys.exit(1)
         lines = process.stdout.strip().split('\n')
@@ -194,41 +179,39 @@ class SnapMan(object):
                 snapshots[dataset_name].append(snapshot)
         return snapshots
 
+    def get_keep_count(self, dataset_name):
+        if dataset_name in self.config.intervals and self.config.command in self.config.intervals[dataset_name]:
+            return self.config.intervals[dataset_name][self.config.command]
+        else:
+            return self.config.intervals['**'][self.config.command]
+
     def delete_expired_snapshots(self, snapshots):
         for dataset_name in snapshots.keys():
             if self.config.included(dataset_name):
                 dataset_snapshots = snapshots[dataset_name]
-
-                def sort_by_creation_date(item_x, item_y):
-                    return cmp(item_y["creation_date"], item_x["creation_date"])
-
-                dataset_snapshots.sort(sort_by_creation_date)
-                keep_count = self.config.intervals[self.config.command]
+                dataset_snapshots.sort(key=lambda x: x['creation_date'])
+                keep_count = self.get_keep_count(dataset_name)
                 if len(dataset_snapshots) > keep_count:
                     delete_queue = dataset_snapshots[keep_count:]
                     for snapshot in delete_queue:
                         self.delete_snapshot(snapshot["snapshot_name"])
 
     def run(self):
-        if self.config.command == "list-unmanaged-snapshots":
-            self.list_unmanaged_snapshots()
-        elif self.config.command == "list-managed-snapshots":
-            self.list_managed_snapshots()
-        else:
-            datasets = self.get_datasets()
-            for dataset in datasets:
-                if self.config.included(dataset):
-                    self.create_snapshot(dataset)
-            snapshots = self.get_snapshots()
-            self.delete_expired_snapshots(snapshots)
+        datasets = self.get_datasets()
+        for dataset in datasets:
+            if self.config.included(dataset):
+                self.create_snapshot(dataset)
+        snapshots = self.get_snapshots()
+        self.delete_expired_snapshots(snapshots)
 
 
 def main():
     parser = argparse.ArgumentParser(prog="autosnap")
-    parser.add_argument("-c", required=False, metavar="CONFIG", dest="config", default="/opt/autosnap/autosnap.conf", help="configuration file")
+    parser.add_argument("-v", "--version", action='version', version=f"%(prog)s {__version__}", help="show program's version and exit")
     parser.add_argument("command", help="it must be one of config interval names")
+
     args = parser.parse_args()
-    config = Config(args.config, args.command)
+    config = Config(args.command)
     SnapMan(config).run()
 
 
