@@ -1,6 +1,6 @@
-========
-autosnap
-========
+========================
+autosnap (version 1.0.0)
+========================
 
 ZFS snapshot automation tool
 
