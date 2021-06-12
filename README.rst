@@ -30,8 +30,9 @@ Configuration
 
 .. code-block:: none
 
-    interval hourly 24
+    interval hourly 36
     interval daily  30
+    interval weekly 8
 
     exclude tank
 
@@ -64,19 +65,23 @@ For example:
 
 .. code-block:: none
 
-    interval hourly 24
+    interval hourly 36
     interval daily  30
+    interval weekly 8
 
     exclude tank
 
     [tank/kvm-stage-elastic]
 
+    interval hourly 24
     interval daily  7
+    interval weekly 4
 
     [tank/kvm-stage-mysqld]
 
-    interval daily  14
-
+    interval hourly 24
+    interval daily  7
+    interval weekly 4
 
 Schedule autosnap
 -----------------
@@ -88,6 +93,7 @@ Schedule autosnap
 
     0 0 * * * root /opt/autosnap/autosnap daily
     0 * * * * root /opt/autosnap/autosnap hourly
+    0 0 * * 7 root /opt/autosnap/autosnap weekly
 
 At start ``autosnap`` will read config from ``/opt/autosnap/autosnap.conf``.
 
