@@ -30,8 +30,8 @@ Configuration
 
 .. code-block:: none
 
-    interval hourly 36
-    interval daily  30
+    interval hourly 24
+    interval daily  15
     interval weekly 8
 
     exclude tank
@@ -65,8 +65,8 @@ For example:
 
 .. code-block:: none
 
-    interval hourly 36
-    interval daily  30
+    interval hourly 24
+    interval daily  15
     interval weekly 8
 
     exclude tank
@@ -91,8 +91,8 @@ Schedule autosnap
 
 .. code-block:: none
 
-    0 0 * * * root /opt/autosnap/autosnap daily
     0 * * * * root /opt/autosnap/autosnap hourly
+    0 0 * * * root /opt/autosnap/autosnap daily
     0 0 * * 7 root /opt/autosnap/autosnap weekly
 
 At start ``autosnap`` will read config from ``/opt/autosnap/autosnap.conf``.
