@@ -10,7 +10,7 @@ import sys
 __author__ = "Gena Makhomed"
 __contact__ = "https://github.com/makhomed/autosnap"
 __license__ = "GNU General Public License version 3"
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 ZFS_BINARY_FILENAME = '/usr/sbin/zfs'
 AUTOSNAP_CONFIG_FILENAME = '/opt/autosnap/autosnap.conf'
@@ -36,11 +36,12 @@ class Process:
 
 
 class Config:
-    def __init__(self, command):
+    def __init__(self, args):
         self.intervals = dict()
         self.intervals['**'] = dict()
         self.filters = list()
-        self.command = command
+        self.args = args
+        self.command = args.command
         self.datasets = SnapMan.get_datasets()
         if not os.path.isfile(ZFS_BINARY_FILENAME):
             sys.exit(f"zfs binary file {ZFS_BINARY_FILENAME} not found")
@@ -99,7 +100,7 @@ class Config:
             else:
                 sys.exit("bad config: invalid directive '%s'" % name)
         self.filters.append((True, self.transform_filter_line("**")))
-        if self.command not in self.intervals['**']:
+        if self.command is not None and self.command not in self.intervals['**']:
             sys.exit("bad command '%s', interval '%s' not defined in config" % (self.command, self.command))
 
     def transform_filter_line(self, filter_line):  # pylint: disable=no-self-use
@@ -137,6 +138,7 @@ class SnapMan:
         return datasets
 
     def create_snapshot(self, dataset):
+        assert self.config.command is not None
         now = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
         snapshot_name = dataset + "@autosnap." + now + "." + self.config.command
         process = Process(ZFS_BINARY_FILENAME, "snapshot", snapshot_name)
@@ -152,7 +154,7 @@ class SnapMan:
             print("can't delete ZFS snapshot '%s'" % snapshot_name)
             process.print_info("error")
 
-    def get_snapshots(self):
+    def get_command_snapshots(self):
         process = Process(ZFS_BINARY_FILENAME, "list", "-H", "-p", "-o", "name,creation", "-t", "snap")
         if process.failed():
             print("can't read ZFS snapshots")
@@ -179,13 +181,37 @@ class SnapMan:
                 snapshots[dataset_name].append(snapshot)
         return snapshots
 
+    def get_all_snapshots(self):
+        process = Process(ZFS_BINARY_FILENAME, "list", "-H", "-p", "-o", "name,creation", "-t", "snap")
+        if process.failed():
+            print("can't read ZFS snapshots")
+            process.print_info("fatal error")
+            sys.exit(1)
+        lines = process.stdout.strip().split('\n')
+        all_snapshots = dict()
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            snapshot_name, creation_date_as_string = line.split()
+            dataset_name, snapshot_info = snapshot_name.split('@')
+            creation_date = int(creation_date_as_string)
+            last_point_position = snapshot_info.rfind('.')
+            snapshot_command = snapshot_info[last_point_position + 1:]
+            snapshot = dict(snapshot_name=snapshot_name, dataset_name=dataset_name,
+                            snapshot_command=snapshot_command, creation_date=creation_date)
+            if dataset_name not in all_snapshots:
+                all_snapshots[dataset_name] = list()
+            all_snapshots[dataset_name].append(snapshot)
+        return all_snapshots
+
     def get_keep_count(self, dataset_name):
         if dataset_name in self.config.intervals and self.config.command in self.config.intervals[dataset_name]:
             return self.config.intervals[dataset_name][self.config.command]
         else:
             return self.config.intervals['**'][self.config.command]
 
-    def delete_expired_snapshots(self, snapshots):
+    def delete_expired_snapshots(self, snapshots, verbose=False):
         for dataset_name in snapshots.keys():
             if self.config.included(dataset_name):
                 dataset_snapshots = snapshots[dataset_name]
@@ -194,24 +220,62 @@ class SnapMan:
                 if len(dataset_snapshots) > keep_count:
                     delete_queue = dataset_snapshots[keep_count:]
                     for snapshot in delete_queue:
+                        if verbose:
+                            print("delete expired snapshot %s" % snapshot["snapshot_name"])
                         self.delete_snapshot(snapshot["snapshot_name"])
 
+    def delete_all_expired_snapshots(self):
+        all_intervals = list(self.config.intervals['**'].keys())
+        save_command = self.config.command
+        for interval in all_intervals:
+            self.config.command = interval
+            snapshots = self.get_command_snapshots()
+            self.delete_expired_snapshots(snapshots, verbose=True)
+        self.config.command = save_command
+
+    def print_extra_snapshots(self):
+        extra_snapshots = list()
+        all_intervals = list(self.config.intervals['**'].keys())
+        all_snapshots = self.get_all_snapshots()
+        all_datasets = all_snapshots.keys()
+        for dataset in all_datasets:
+            for snapshot in all_snapshots[dataset]:
+                snapshot_name = snapshot["snapshot_name"]
+                snapshot_info = snapshot_name.split('@')[1]
+                snapshot_command = snapshot["snapshot_command"]
+                if not snapshot_info.startswith("autosnap.") or snapshot_command not in all_intervals or not self.config.included(dataset):
+                    extra_snapshots.append(snapshot_name)
+        if len(extra_snapshots) > 0:
+            print('\n'.join(extra_snapshots))
+
     def run(self):
-        datasets = self.get_datasets()
-        for dataset in datasets:
-            if self.config.included(dataset):
-                self.create_snapshot(dataset)
-        snapshots = self.get_snapshots()
-        self.delete_expired_snapshots(snapshots)
+        if self.config.args.delete:
+            self.delete_all_expired_snapshots()
+        if self.config.args.extra:
+            self.print_extra_snapshots()
+        if self.config.args.command is not None:
+            datasets = self.get_datasets()
+            for dataset in datasets:
+                if self.config.included(dataset):
+                    self.create_snapshot(dataset)
+            snapshots = self.get_command_snapshots()
+            self.delete_expired_snapshots(snapshots)
 
 
 def main():
     parser = argparse.ArgumentParser(prog="autosnap")
+    group = parser.add_mutually_exclusive_group()
     parser.add_argument("-v", "--version", action='version', version=f"%(prog)s {__version__}", help="show program's version and exit")
-    parser.add_argument("command", help="it must be one of config interval names")
+    group.add_argument("-d", "--delete", action='store_true', help="delete all expired snapshots, managed by autosnap")
+    parser.add_argument("-x", "--extra", action='store_true', help="list all snapshots, not managed by autosnap")
+    group.add_argument("command", action='store', nargs='?', default=None, help="it must be one of config interval names")
 
     args = parser.parse_args()
-    config = Config(args.command)
+    if not args.delete and not args.extra and args.command is None:
+        parser.print_help()
+        sys.exit(2)
+
+    config = Config(args)
     SnapMan(config).run()
 
 

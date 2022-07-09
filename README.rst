@@ -1,6 +1,6 @@
-======================
-autosnap (version 2.0)
-======================
+========================
+autosnap (version 2.1.0)
+========================
 
 ZFS snapshot automation tool
 
@@ -33,8 +33,6 @@ Configuration
     interval hourly 24
     interval daily  15
     interval weekly 8
-
-    exclude tank
 
 Configuration file allow comments, from symbol ``#`` to end of line.
 
@@ -69,8 +67,6 @@ For example:
     interval daily  15
     interval weekly 8
 
-    exclude tank
-
     [tank/kvm-stage-elastic]
 
     interval hourly 24
@@ -91,15 +87,26 @@ Schedule autosnap
 
 .. code-block:: none
 
-    0 * * * * root /opt/autosnap/autosnap hourly
-    0 0 * * * root /opt/autosnap/autosnap daily
-    0 0 * * 7 root /opt/autosnap/autosnap weekly
+    0 * * * * root /opt/autosnap/autosnap -x hourly
+    0 0 * * * root /opt/autosnap/autosnap -x daily
+    0 0 * * 7 root /opt/autosnap/autosnap -x weekly
 
-At start ``autosnap`` will read config from ``/opt/autosnap/autosnap.conf``.
+Command line
+------------
+
+At start ``autosnap`` read config from ``/opt/autosnap/autosnap.conf``.
 
 One and only one command must be specified in command line. This command must
 be the name of interval from configuration file.
 
 During execution, autosnap will create one new snapshot for each included dataset
 and delete all oldest snapshots exceeding the allowed snapshots count for given interval.
+
+If autosnap started without any parameters - then help printed and program will exit.
+
+If autosnap started with ``-x`` parameter - it will list all snapshots, not managed by autosnap.
+The ``-x`` parameter can be combined with interval name.
+
+If autosnap started with ``-d`` parameter - it will delete all expired snapshots, managed by autosnap.
+The ``-d`` parameter can not be combined with interval name.
 
