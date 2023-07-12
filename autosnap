@@ -10,7 +10,7 @@ import sys
 __author__ = "Gena Makhomed"
 __contact__ = "https://github.com/makhomed/autosnap"
 __license__ = "GNU General Public License version 3"
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 
 ZFS_BINARY_FILENAME = '/usr/sbin/zfs'
 AUTOSNAP_CONFIG_FILENAME = '/opt/autosnap/autosnap.conf'
