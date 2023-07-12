@@ -40,6 +40,7 @@ class Config:
         self.intervals = dict()
         self.intervals['**'] = dict()
         self.filters = list()
+        self._ignore = list()
         self.args = args
         self.command = args.command
         self.datasets = SnapMan.get_datasets()
@@ -92,9 +93,11 @@ class Config:
                 else:
                     self.intervals[dataset][interval_name] = count
 
-            elif name == "include" or name == "exclude":
+            elif name == "include" or name == "exclude" or name == "ignore":
                 if not inside_dataset:
                     self.filters.append((name == "include", self.transform_filter_line(value)))
+                    if name == "ignore":
+                        self._ignore.append(self.transform_filter_line(value))
                 else:
                     sys.exit(f"bad config: directive '{name}' allowed only on global level")
             else:
@@ -121,6 +124,12 @@ class Config:
             if re.match(filter_line, dataset):
                 return dataset_included
         sys.exit(f"internal error: dataset '{dataset}' don't match any filter line")
+
+    def ignored(self, dataset):
+        for filter_line in self._ignore:
+            if re.match(filter_line, dataset):
+                return True
+        return False
 
 
 class SnapMan:
@@ -244,7 +253,8 @@ class SnapMan:
                 snapshot_info = snapshot_name.split('@')[1]
                 snapshot_command = snapshot["snapshot_command"]
                 if not snapshot_info.startswith("autosnap.") or snapshot_command not in all_intervals or not self.config.included(dataset):
-                    extra_snapshots.append(snapshot_name)
+                    if not self.config.ignored(dataset):
+                        extra_snapshots.append(snapshot_name)
         if len(extra_snapshots) > 0:
             print('\n'.join(extra_snapshots))
 

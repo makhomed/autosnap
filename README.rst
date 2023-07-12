@@ -1,5 +1,5 @@
 ========================
-autosnap (version 2.1.0)
+autosnap (version 2.2.0)
 ========================
 
 ZFS snapshot automation tool
@@ -34,10 +34,17 @@ Configuration
     interval daily  15
     interval weekly 8
 
+    exclude **-dump
+    exclude **-swap
+
+    ignore tank/backup/**
+    ignore tank/mirror/**
+
+
 Configuration file allow comments, from symbol ``#`` to end of line.
 
-Configuration file has only three directives:
-``interval``, ``exclude`` and ``include``.
+Configuration file has only four directives:
+``interval``, ``exclude``, ``include`` and ``ignore``.
 
 Syntax of interval directive: ``interval <name> <count>``.
 ``<name>`` is name of interval, must be unique.
@@ -46,8 +53,8 @@ Syntax of interval directive: ``interval <name> <count>``.
 Interval name can be ``frequent``, ``hourly``, ``daily``, ``weekly``, ``monthly``, ``yearly`` or something else.
 Each interval name should be configured via cron for running.
 
-Syntax of ``include`` and ``exclude`` directives are the same:
-``exclude <pattern>`` or ``include <pattern>``.
+Syntax of ``include``, ``exclude`` and ``ignore`` directives are the same:
+``exclude <pattern>`` or ``include <pattern>`` or ``ignore <pattern>``.
 
 By default all datasets are included. But you can exclude some datasets
 by name or by pattern. Pattern is rsync-like, ``?`` means any one symbol,
@@ -56,7 +63,9 @@ by name or by pattern. Pattern is rsync-like, ``?`` means any one symbol,
 First match win, and if it was directive ``exclude`` - dataset will be excluded,
 if it was directive ``include`` - dataset will be included.
 
-``exclude`` and ``include`` directives allowed only on global level.
+``exclude``, ``include`` and ``ignore`` directives allowed only on global level.
+
+``ignore`` command works as ``exclude`` command, and also ``ignore`` datasets will be ignored in the ``autosnap -x`` command output.
 
 ``interval`` directive allowed to be configured for each dataset separately.
 For example:
