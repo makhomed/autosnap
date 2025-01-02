@@ -1,5 +1,5 @@
 ========================
-autosnap (version 2.2.0)
+autosnap (version 2.3.0)
 ========================
 
 ZFS snapshot automation tool

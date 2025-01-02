@@ -7,10 +7,10 @@ import re
 import subprocess
 import sys
 
-__author__ = "Gena Makhomed"
-__contact__ = "https://github.com/makhomed/autosnap"
-__license__ = "GNU General Public License version 3"
-__version__ = "2.2.0"
+__license__ = 'GNU General Public License v3.0 or later'
+__contact__ = 'https://github.com/makhomed/autosnap'
+__version__ = '2.3.0'
+
 
 ZFS_BINARY_FILENAME = '/usr/sbin/zfs'
 AUTOSNAP_CONFIG_FILENAME = '/opt/autosnap/autosnap.conf'
@@ -158,7 +158,7 @@ class SnapMan:
     @staticmethod
     def delete_snapshot(snapshot_name):
         assert '@' in snapshot_name
-        process = Process(ZFS_BINARY_FILENAME, "destroy", snapshot_name)
+        process = Process(ZFS_BINARY_FILENAME, "destroy", "-d", snapshot_name)
         if process.failed():
             print("can't delete ZFS snapshot '%s'" % snapshot_name)
             process.print_info("error")
