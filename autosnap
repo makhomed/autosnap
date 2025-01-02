@@ -9,7 +9,7 @@ import sys
 
 __license__ = 'GNU General Public License v3.0 or later'
 __contact__ = 'https://github.com/makhomed/autosnap'
-__version__ = '2.3.0'
+__version__ = '2.4.0'
 
 
 ZFS_BINARY_FILENAME = '/usr/sbin/zfs'
@@ -160,8 +160,12 @@ class SnapMan:
         assert '@' in snapshot_name
         process = Process(ZFS_BINARY_FILENAME, "destroy", "-d", snapshot_name)
         if process.failed():
-            print("can't delete ZFS snapshot '%s'" % snapshot_name)
-            process.print_info("error")
+            snapshot_busy_message = f'cannot destroy snapshot {snapshot_name}: dataset is busy'
+            if process.returncode == 1 and process.stderr.strip() == snapshot_busy_message:
+                pass
+            else:
+                print("can't delete ZFS snapshot '%s'" % snapshot_name)
+                process.print_info("error")
 
     def get_command_snapshots(self):
         process = Process(ZFS_BINARY_FILENAME, "list", "-H", "-p", "-o", "name,creation", "-t", "snap")
